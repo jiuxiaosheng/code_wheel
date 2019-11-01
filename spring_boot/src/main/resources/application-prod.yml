@@ -1,0 +1,9 @@
+server:
+  #服务器监听端口
+  port: 8090
+spring:
+  application:
+    #应用名称
+    name: spring_boot
+logging:
+  config: classpath:logback-prod.xml

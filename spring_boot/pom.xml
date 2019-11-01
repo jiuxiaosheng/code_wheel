@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>code_wheel.avcoli.com</groupId>
+  <artifactId>spring_boot</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>spring_boot</name>
+  <description>spring boot in code wheel</description>
+
+  <properties>
+    <java.version>1.8</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+
+  <!--多配置文件设置，对本地开发版本、测试版本、生产版本等多个环境分别配置-->
+  <!-- 需要和下面的build->resources配合使用 -->
+  <profiles>
+    <profile>
+      <id>dev</id>
+      <properties>
+        <!-- 使用application-dev.yml -->
+        <profiles.active>dev</profiles.active>
+        <maven.test.skip>true</maven.test.skip>
+      </properties>
+      <!--默认为开发配置-->
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+    </profile>
+    <profile>
+      <id>prod</id>
+      <properties>
+        <!-- 使用application-prod.yml -->
+        <profiles.active>prod</profiles.active>
+        <maven.test.skip>true</maven.test.skip>
+      </properties>
+    </profile>
+  </profiles>
+
+  <!-- spring boot 父依赖管理 -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.1.3.RELEASE</version><!-- 可指定spring boot版本 -->
+    <relativePath/> <!-- 设定一个空值将始终从仓库中获取，不从本地路径获取 -->
+  </parent>
+
+
+  <!--具体依赖配置-->
+  <dependencies>
+    <!-- spring boot 的基础web -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!--  开发工具包 Start  -->
+    <!-- spring开发工具 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-devtools</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!--一个可以静态分析Java代码BUG的工具包-->
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>3.0.2</version>
+    </dependency>
+    <!--  开发工具包 End  -->
+
+
+    <!--  第三方工具组件包 Start  -->
+    <!--Google guava工具包-->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>23.0</version>
+    </dependency>
+    <!--lombok,可以自动通过注解的方式生成get set方法， 需要安装IDEA插件-->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.8</version>
+      <scope>provided</scope>
+    </dependency>
+    <!--apache common 可以使用一些如对字符串判断的工具方法-->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.7</version>
+    </dependency>
+    <!--  第三方工具组件包 End  -->
+
+  </dependencies>
+
+
+  <!-- 构建配置 -->
+  <build>
+    <!-- 资源配置 -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <!-- 不带后坠的配置文件为通用配置 -->
+          <include>application.yml</include>
+          <include>application-${profiles.active}.yml</include>
+        </includes>
+      </resource>
+    </resources>
+    <!-- 构建时需要用到的插件 -->
+    <plugins>
+
+      <!-- 编译配置 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.0</version>
+        <configuration>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
+          <encoding>${project.build.sourceEncoding}</encoding>
+        </configuration>
+      </plugin>
+
+
+      <!-- spring boot 官方的打包插件, 负责打包包含所有依赖的胖包 Uber-Jar -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <finalName>${project.name}-${project.version}</finalName>
+          <fork>true</fork>
+          <layout>ZIP</layout>
+        </configuration>
+      </plugin>
+
+      <!-- 打包插件, 这里只负责打不包含依赖的瘦包 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <finalName>${project.name}-${project.version}-skinny</finalName>
+              <archive>
+                <manifest>
+                  <addClasspath>true</addClasspath>
+                  <!-- 如果需要打不包含依赖的包，需要指定依赖包路径，在运行jar包的时候需要确认该路径存在并包含所有依赖包 -->
+                  <classpathPrefix>lib/</classpathPrefix>
+                  <!-- 指定入口类地址 -->
+                  <mainClass>com.acvoli.code_wheel.Application</mainClass>
+                </manifest>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- 依赖包拷贝, 可实现对所有依赖包的提取 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.0.1</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <!-- 在package阶段自动执行 -->
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>target/lib</outputDirectory>
+              <!-- 因为依赖包拷贝一般用在生产环境，对不需要的包可以过滤 -->
+              <excludeArtifactIds>
+                spring-boot-devtools,junit
+              </excludeArtifactIds>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+</project>
